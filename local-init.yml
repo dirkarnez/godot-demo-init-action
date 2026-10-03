@@ -14,3 +14,41 @@ python --version
 # West version: v1.5.0
 pip install -U west && \
   west --version
+
+
+       # Use absolute paths so that we can `cd` without having to go back to the parent directory manually.
+          for demo in */*/; do
+            echo ""
+            echo ""
+            echo "================================================================================"
+            echo "Exporting demo $demo..."
+            echo "================================================================================"
+
+            mkdir -p "$BASEDIR/.github/dist/$demo"
+            cd "$BASEDIR/$demo"
+
+            # Copy an export template preset file configured for Web exporting.
+            # This way, we don't have to commit `export_presets.cfg` for each project.
+            cp "$BASEDIR/.github/dist/export_presets.cfg" .
+            # Enable ETC2 texture importing, which is disabled by default (but required for web exports to work on mobile platforms).
+            echo "[rendering]\n\ntextures/vram_compression/import_etc2_astc=true" >> project.godot
+
+            # Enable WebXR Polyfill and WebXR Layers Polyfill for the WebXR demo.
+            if [ "$demo" == "xr/webxr/" ]; then
+              sed -i 's~^html/head_include=""$~html/head_include="<script src=\\"https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/webxr-polyfill.min.js\\"></script>\n<script>\nvar polyfill = new WebXRPolyfill();\n</script>\n<script src=\\"https://cdn.jsdelivr.net/npm/webxr-layers-polyfill@latest/build/webxr-layers-polyfill.min.js\\"></script>\n<script>\nvar layersPolyfill = new WebXRLayersPolyfill();\n</script>"~g' export_presets.cfg
+            fi
+
+            godot --verbose --headless --export-release "Web" "$BASEDIR/.github/dist/$demo/index.html"
+
+            # Replace the WASM file with a symbolic link to avoid duplicating files in the pushed branch.
+            # (WASM files are identical across projects, but not PCK or HTML/JavaScript files.)
+            mv -f "$BASEDIR/.github/dist/$demo/index.wasm" "$BASEDIR/.github/dist/index.wasm"
+            # The symlink must be relative as it needs to point to a file within the pushed repository.
+            ln -s "../../index.wasm" "$BASEDIR/.github/dist/$demo/index.wasm"
+
+            # Append the demo to the list of demos for the website.
+            PROJECT_NAME=$(cat project.godot | grep "config/name" | cut -d '"' -f 2 | tr -d "\n")
+            echo "<li><a href='$demo'><img width="64" height="64" src="$demo/index.icon.png" alt=""><p>$PROJECT_NAME</p></a></li>" >> "$BASEDIR/.github/dist/demos.html"
+          done
+
+          cat "$BASEDIR/.github/dist/header.html" "$BASEDIR/.github/dist/demos.html" "$BASEDIR/.github/dist/footer.html" > "$BASEDIR/.github/dist/index.html"
