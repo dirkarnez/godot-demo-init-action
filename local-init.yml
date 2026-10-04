@@ -4,9 +4,6 @@ echo "User: $(whoami) UID: $(id -u) GID: $(id -g)"
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 
-
-git config --global core.autocrlf true
-
 case "$(uname -s)" in
 Linux*)
     echo "Running on Linux"
