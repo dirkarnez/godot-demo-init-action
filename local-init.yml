@@ -5,15 +5,23 @@ SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 # git version 2.55.0
 git --version
 
-# cmake version 3.24.4
-cmake --version
+# # cmake version 3.24.4
+# cmake --version
 
-# Python 3.14.7
-python --version
+# # Python 3.14.7
+# python --version
 
-# West version: v1.5.0
-pip install -U west && \
-  west --version
+# # West version: v1.5.0
+# pip install -U west && \
+#   west --version
+
+curl https://downloads.godotengine.org/?version=4.7.2&flavor=stable&slug=linux.x86_64.zip&platform=linux.64
+
+git clone https://github.com/godotengine/godot-demo-projects && \
+cd godot-demo-projects && \
+
+
+
 
 
        # Use absolute paths so that we can `cd` without having to go back to the parent directory manually.
