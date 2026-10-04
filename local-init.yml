@@ -86,16 +86,15 @@ for demo in */*/; do
   # This way, we don't have to commit `export_presets.cfg` for each project.
   cp "$SCRIPT_DIR/export_presets.cfg" .
 
-  # # Enable ETC2 texture importing, which is disabled by default (but required for web exports to work on mobile platforms).
-  # echo "[rendering]\n\ntextures/vram_compression/import_etc2_astc=true" >> project.godot
+  # Enable ETC2 texture importing, which is disabled by default (but required for web exports to work on mobile platforms).
+  echo -e "[rendering]\n\ntextures/vram_compression/import_etc2_astc=true" >> project.godot
 
   # Enable WebXR Polyfill and WebXR Layers Polyfill for the WebXR demo.
   if [ "$demo" == "xr/webxr/" ]; then
     sed -i 's~^html/head_include=""$~html/head_include="<script src=\\"https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/webxr-polyfill.min.js\\"></script>\n<script>\nvar polyfill = new WebXRPolyfill();\n</script>\n<script src=\\"https://cdn.jsdelivr.net/npm/webxr-layers-polyfill@latest/build/webxr-layers-polyfill.min.js\\"></script>\n<script>\nvar layersPolyfill = new WebXRLayersPolyfill();\n</script>"~g' export_presets.cfg
   fi
-  echo "$PWD"
-  ls
-  Godot_v4.7.2-stable_win64.exe --verbose --headless --path "$PWD" --export-release "Web" "123"
+  
+  Godot_v4.7.2-stable_win64.exe --verbose --headless --path "$PWD" --export-release "Web" "$BASEDIR/dist/$demo/index.html"
 
   # # Replace the WASM file with a symbolic link to avoid duplicating files in the pushed branch.
   # # (WASM files are identical across projects, but not PCK or HTML/JavaScript files.)
