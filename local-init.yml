@@ -1,6 +1,127 @@
 # /bin/bash
 
+echo "User: $(whoami) UID: $(id -u) GID: $(id -g)"
+
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
+
+
+git config --global core.autocrlf true
+
+case "$(uname -s)" in
+Linux*)
+    echo "Running on Linux"
+
+    export ARMGCC_DIR="/opt/arm-gnu-toolchain-14.2.rel1-x86_64-arm-none-eabi"
+    export ARMGCC_GCC="$ARMGCC_DIR/bin/arm-none-eabi-gcc"
+
+    if [ ! -f "$ARMGCC_GCC" ]; then
+        echo "$ARMGCC_GCC not found. Downloading now..."
+
+        # /opt/arm-gnu-toolchain-14.2.rel1-x86_64-arm-none-eabi/bin/arm-none-eabi-gcc --version
+        # arm-none-eabi-gcc (Arm GNU Toolchain 14.2.Rel1 (Build arm-14.52)) 14.2.1 20241119
+        cd /opt; \
+        wget https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip && \
+        unzip Godot_v4.7.2-stable_linux.x86_64.zip  && \
+        ls -R
+
+        # && mv Godot_v${GODOT_VERSION}-${RELEASE_NAME}_${GODOT_PLATFORM} /usr/local/bin/godot \
+        # && unzip Godot_v${GODOT_VERSION}-${RELEASE_NAME}_export_templates.tpz \
+        # && mv templates/* ~/.local/share/godot/export_templates/${GODOT_VERSION}.${RELEASE_NAME} \
+        # && rm -f Godot_v${GODOT_VERSION}-${RELEASE_NAME}_export_templates.tpz Godot_v${GODOT_VERSION}-${RELEASE_NAME}_${GODOT_PLATFORM}.zip
+    
+    else
+        echo "$ARMGCC_GCC already exists. Skipping download."
+    fi
+
+    ;;
+  MSYS_*|MINGW*)
+    echo "Running on Windows (MSYS/MSYS2)"
+
+
+    export PATH="$PATH:$(cygpath -u $USERPROFILE)/Downloads/Godot_v4.7.2-stable_win64"
+    export PATH="$PATH:$(cygpath -u $USERPROFILE)/Downloads/PortableGit/bin"
+    export PATH="$PATH:$(cygpath -u $SYSTEMDRIVE)/Program Files/7-Zip:$(cygpath -u $SYSTEMDRIVE)/Program Files (x86)/7-Zip"
+
+    # if [ ! -f "$ARMGCC_GCC" ]; then
+    #     echo "$ARMGCC_GCC not found. Downloading now..."
+
+  # Godot_v4.7.2-stable_win64.exe*  Godot_v4.7.2-stable_win64_console.exe*
+        # cd "$(cygpath -u $USERPROFILE)/Downloads"; \
+        #   curl -L https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_win64.exe.zip --output Godot_v4.7.2-stable_win64.zip && \
+        #   7z x Godot_v4.7.2-stable_win64.zip -o"Godot_v4.7.2-stable_win64" && \
+        #   cd Godot_v4.7.2-stable_win64 && \
+        #   ls -R
+    
+    # else
+    #     echo "$ARMGCC_GCC already exists. Skipping download."
+    # fi
+    ;;
+  *)
+    echo "Running on a unsupported OS"
+    ;;
+esac
+
+
+
+
+
+# git clone --depth=1 https://github.com/godotengine/godot-demo-projects && \
+cd godot-demo-projects
+
+BASEDIR="$PWD"
+
+# Use absolute paths so that we can `cd` without having to go back to the parent directory manually.
+for demo in */*/; do
+  echo ""
+  echo ""
+  echo "================================================================================"
+  echo "Exporting demo $demo..."
+  echo "================================================================================"
+
+  mkdir -p "$BASEDIR/dist/$demo"
+
+  cd "$BASEDIR/$demo"
+
+  # Copy an export template preset file configured for Web exporting.
+  # This way, we don't have to commit `export_presets.cfg` for each project.
+  cp "$SCRIPT_DIR/export_presets.cfg" .
+
+  # # Enable ETC2 texture importing, which is disabled by default (but required for web exports to work on mobile platforms).
+  # echo "[rendering]\n\ntextures/vram_compression/import_etc2_astc=true" >> project.godot
+
+  # Enable WebXR Polyfill and WebXR Layers Polyfill for the WebXR demo.
+  if [ "$demo" == "xr/webxr/" ]; then
+    sed -i 's~^html/head_include=""$~html/head_include="<script src=\\"https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/webxr-polyfill.min.js\\"></script>\n<script>\nvar polyfill = new WebXRPolyfill();\n</script>\n<script src=\\"https://cdn.jsdelivr.net/npm/webxr-layers-polyfill@latest/build/webxr-layers-polyfill.min.js\\"></script>\n<script>\nvar layersPolyfill = new WebXRLayersPolyfill();\n</script>"~g' export_presets.cfg
+  fi
+  echo "$PWD"
+  ls
+  Godot_v4.7.2-stable_win64.exe --verbose --headless --path "$PWD" --export-release "Web" "123"
+
+  # # Replace the WASM file with a symbolic link to avoid duplicating files in the pushed branch.
+  # # (WASM files are identical across projects, but not PCK or HTML/JavaScript files.)
+  # mv -f "$BASEDIR/dist/$demo/index.wasm" "$BASEDIR/dist/index.wasm"
+  # # The symlink must be relative as it needs to point to a file within the pushed repository.
+  # ln -s "../../index.wasm" "$BASEDIR/dist/$demo/index.wasm"
+
+  # # Append the demo to the list of demos for the website.
+  # PROJECT_NAME=$(cat project.godot | grep "config/name" | cut -d '"' -f 2 | tr -d "\n")
+  # echo "<li><a href='$demo'><img width="64" height="64" src="$demo/index.icon.png" alt=""><p>$PROJECT_NAME</p></a></li>" >> "$BASEDIR/dist/demos.html"
+done
+
+cat "$BASEDIR/dist/header.html" "$BASEDIR/dist/demos.html" "$BASEDIR/dist/footer.html" > "$BASEDIR/dist/index.html"
+
+
+read -p "123"
+
+
+
+
+
+
+
+
+
+
 
 # git version 2.55.0
 git --version
@@ -15,48 +136,8 @@ git --version
 # pip install -U west && \
 #   west --version
 
-curl https://downloads.godotengine.org/?version=4.7.2&flavor=stable&slug=linux.x86_64.zip&platform=linux.64
-
-git clone https://github.com/godotengine/godot-demo-projects && \
-cd godot-demo-projects && \
 
 
 
 
 
-       # Use absolute paths so that we can `cd` without having to go back to the parent directory manually.
-          for demo in */*/; do
-            echo ""
-            echo ""
-            echo "================================================================================"
-            echo "Exporting demo $demo..."
-            echo "================================================================================"
-
-            mkdir -p "$BASEDIR/.github/dist/$demo"
-            cd "$BASEDIR/$demo"
-
-            # Copy an export template preset file configured for Web exporting.
-            # This way, we don't have to commit `export_presets.cfg` for each project.
-            cp "$BASEDIR/.github/dist/export_presets.cfg" .
-            # Enable ETC2 texture importing, which is disabled by default (but required for web exports to work on mobile platforms).
-            echo "[rendering]\n\ntextures/vram_compression/import_etc2_astc=true" >> project.godot
-
-            # Enable WebXR Polyfill and WebXR Layers Polyfill for the WebXR demo.
-            if [ "$demo" == "xr/webxr/" ]; then
-              sed -i 's~^html/head_include=""$~html/head_include="<script src=\\"https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/webxr-polyfill.min.js\\"></script>\n<script>\nvar polyfill = new WebXRPolyfill();\n</script>\n<script src=\\"https://cdn.jsdelivr.net/npm/webxr-layers-polyfill@latest/build/webxr-layers-polyfill.min.js\\"></script>\n<script>\nvar layersPolyfill = new WebXRLayersPolyfill();\n</script>"~g' export_presets.cfg
-            fi
-
-            godot --verbose --headless --export-release "Web" "$BASEDIR/.github/dist/$demo/index.html"
-
-            # Replace the WASM file with a symbolic link to avoid duplicating files in the pushed branch.
-            # (WASM files are identical across projects, but not PCK or HTML/JavaScript files.)
-            mv -f "$BASEDIR/.github/dist/$demo/index.wasm" "$BASEDIR/.github/dist/index.wasm"
-            # The symlink must be relative as it needs to point to a file within the pushed repository.
-            ln -s "../../index.wasm" "$BASEDIR/.github/dist/$demo/index.wasm"
-
-            # Append the demo to the list of demos for the website.
-            PROJECT_NAME=$(cat project.godot | grep "config/name" | cut -d '"' -f 2 | tr -d "\n")
-            echo "<li><a href='$demo'><img width="64" height="64" src="$demo/index.icon.png" alt=""><p>$PROJECT_NAME</p></a></li>" >> "$BASEDIR/.github/dist/demos.html"
-          done
-
-          cat "$BASEDIR/.github/dist/header.html" "$BASEDIR/.github/dist/demos.html" "$BASEDIR/.github/dist/footer.html" > "$BASEDIR/.github/dist/index.html"
